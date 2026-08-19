@@ -1,0 +1,35 @@
+# Privacy-first default deny: do not version vault material by accident.
+*
+
+# The only public, structural files.
+!.gitignore
+!README.md
+
+!00-Inbox/
+!00-Inbox/.gitkeep
+!Books/
+!Books/.gitkeep
+!Courses/
+!Courses/.gitkeep
+!YouTube/
+!YouTube/.gitkeep
+!99-System/
+!99-System/.gitkeep
+!99-System/Templates/
+!99-System/Templates/.gitkeep
+!99-System/Templates/Content-Package/
+!99-System/Templates/Content-Package/.gitkeep
+!99-System/Templates/Content-Package/01-Source/
+!99-System/Templates/Content-Package/01-Source/.gitkeep
+!99-System/Templates/Content-Package/02-Structure/
+!99-System/Templates/Content-Package/02-Structure/.gitkeep
+!99-System/Templates/Content-Package/03-Concepts/
+!99-System/Templates/Content-Package/03-Concepts/.gitkeep
+!99-System/Templates/Content-Package/04-Graph/
+!99-System/Templates/Content-Package/04-Graph/.gitkeep
+!99-System/Templates/Content-Package/04-Graph/corpus/
+!99-System/Templates/Content-Package/04-Graph/corpus/.gitkeep
+!99-System/Templates/Content-Package/05-Derived/
+!99-System/Templates/Content-Package/05-Derived/.gitkeep
+!99-System/Templates/Content-Package/90-Legacy/
+!99-System/Templates/Content-Package/90-Legacy/.gitkeep
