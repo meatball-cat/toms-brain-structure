@@ -1,21 +1,110 @@
-# Knowledge Vault Skeleton
+# Source-First Knowledge Vault Skeleton
 
-This repository intentionally contains only a reusable folder structure. It contains no personal notes, source materials, transcripts, generated graphs, editor configuration, history, or credentials.
+这是一个可公开分享的知识库「干库」：它只保留知识管理与 GraphRAG 的目录框架、工作逻辑和安全边界，不包含任何个人知识、原始资料、视频文稿、图谱产物、编辑器配置、访问凭据或历史记录。
 
-The `.gitignore` uses a default-deny policy: only this README, the ignore policy, and the empty directory markers are versioned. Adding knowledge to a local folder will not make it eligible for a normal Git commit.
+它适合用作新 Vault 的起点，也可用于理解一套“来源优先（source-first）”知识系统如何组织、检索和维护。
+
+## 设计目标
+
+这套结构解决的不是“把笔记堆进一个文件夹”，而是让每一条可回答的事实都能回到可定位的原始来源。
+
+- **来源优先**：原始材料是事实依据；总结、概念卡片和图谱都不能替代原始材料。
+- **包级隔离**：每份内容在独立 package 中管理，防止不同来源被无意混合。
+- **可回溯检索**：图谱负责定位候选关系，最终回答必须回到原始材料的时间戳、页码、章节或其他稳定定位符。
+- **派生内容分层**：个人总结、问题和验证记录可以保留，但必须与事实来源分开。
+- **可维护的图谱**：只从经过控制的 corpus 构图；图谱是导航层，不是事实证明。
+- **隐私默认安全**：公开仓库默认拒绝上传所有新增资料，只允许结构本身进入版本控制。
+
+## 总体结构
+
+知识按照“来源 → 主题 → 内容包”组织。顶层来源根目录可以按实际需要扩展；这里预留了视频、书籍、课程和待处理材料。
 
 ```text
-00-Inbox/
-Books/
-Courses/
-YouTube/
-99-System/
+00-Inbox/                         # 尚未分类或尚未完成的材料
+YouTube/                          # 视频类来源
+Books/                            # 书籍类来源
+Courses/                          # 课程类来源
+99-System/                        # Vault 的系统级规则与模板
   Templates/
-    Content-Package/
+    Content-Package/              # 新内容包的目录骨架
       01-Source/
       02-Structure/
       03-Concepts/
-      04-Graph/corpus/
+      04-Graph/
+        corpus/
       05-Derived/
       90-Legacy/
 ```
+
+一个完成的内容包位于某个来源与主题之下：
+
+```text
+<Source>/<Subject>/<Content-Package>/
+```
+
+例如，视频、书籍和课程都可以使用同一套包结构，但各自采用适合自身的定位方式：视频使用时间戳，书籍使用页码或章节，课程使用课次或模块。
+
+## 内容包的实现逻辑
+
+| 层级 | 目录 | 责任 | 是否可单独作为事实依据 |
+| --- | --- | --- | --- |
+| Overview | `00-Overview.md` | 记录来源元数据、可靠性和包状态 | 否；只说明来源与限制 |
+| Source | `01-Source/` | 保存不可改写的原始材料 | 是 |
+| Structure | `02-Structure/` | 将原文拆成可稳定定位的章节、片段或区块 | 仅在链接到原始定位符时可用 |
+| Concepts | `03-Concepts/` | 管理规范概念名、别名、定义和证据引用 | 仅在链接到原始定位符时可用 |
+| Graph | `04-Graph/corpus/` | 保存可控的关系语料，供图谱构建与导航 | 否；只用于导航 |
+| Derived | `05-Derived/` | 保存个人总结、问题、比较和验证记录 | 否；除非明确询问作者的观点 |
+| Legacy | `90-Legacy/` | 保存已替代的生成结果，供审计 | 否 |
+
+`00-Overview.md` 和包级 `04-Graph/RAG-Protocol.md` 可在实际 Vault 中补充来源可靠性、定位符类型、语言及图服务约束；这些规则只能增加要求，不能降低系统的证据标准。
+
+## GraphRAG 检索流程
+
+图谱的作用是缩小查找范围，而不是直接回答问题。一次事实型问答应遵循下列路径：
+
+```text
+问题
+  → 识别目标来源包与问题范围
+  → 将用户表述映射为规范概念和别名
+  → 用图谱寻找候选节点、邻居或关系路径
+  → 读取对应的概念与结构说明
+  → 回到 01-Source/ 中的原始材料
+  → 使用精确定位符回答，并说明可靠性边界
+```
+
+因此，图中的一条边只能表达“值得回查的关系”，不能被当作已证实的结论。若所选来源没有覆盖某个问题，正确结果应是明确说明“该来源未覆盖”，而不是用模型记忆或外部信息补齐。
+
+## 构图与维护边界
+
+每个 package 独立拥有自己的 `04-Graph/`。构图时只读取 `04-Graph/corpus/`，不会扫描整个 Vault，也不会从 `00-Inbox/` 或个人总结中抽取事实。
+
+受控 corpus 中的关系应同时保留规范概念和对应的原始定位符。生成后的 `graphify-out/` 或等价图谱输出属于可再生的导航产物，不是事实层，也不应手工改写；如需修正图谱，应先修正受控 corpus，再重建并验证该 package 的图。
+
+一次内容包更新的推荐顺序是：
+
+1. 将未完成材料放入 `00-Inbox/`。
+2. 确定来源、主题和稳定定位方式，并创建内容包。
+3. 保存原始材料，记录来源可靠性与必要的校验信息。
+4. 建立结构定位与概念索引，并让每项证据能够回到原始材料。
+5. 仅把已确认、带定位符的关系加入 `04-Graph/corpus/`。
+6. 构建并检查图谱，再更新索引与包状态。
+
+## 公开仓库的隐私机制
+
+本仓库的 [`.gitignore`](.gitignore) 采用**默认拒绝**策略。正常的 Git 添加操作只能纳入：
+
+- 本 README；
+- 忽略规则本身；
+- 用于保留空目录的 `.gitkeep` 文件。
+
+因此，在 `YouTube/`、`Books/`、`Courses/`、`00-Inbox/` 或模板目录下新增任何真实资料、来源文件、图谱、配置或笔记时，都会被自动忽略，不会因常规提交而被上传。若未来需要公开某一份内容，应在独立、经过逐项审核的发布仓库中创建脱敏副本，而不要解除这里的默认拒绝规则。
+
+## 如何使用这份骨架
+
+1. 克隆此仓库，作为新 Vault 的结构起点。
+2. 在本地按 `来源/主题/内容包` 创建和维护实际知识材料。
+3. 将系统规则、模板或资料保存在受控的私有工作副本中。
+4. 仅在需要调整公开结构或文档时，修改本仓库的白名单文件。
+5. 提交前运行 `git status --ignored`，确认资料文件仍处于忽略状态。
+
+这份仓库刻意不提供任何真实内容样例，以确保结构可以公开，而知识本身始终留在本地。
